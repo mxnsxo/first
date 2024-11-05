@@ -1,0 +1,87 @@
+import pygame
+import sys
+
+# Pygame 초기화
+pygame.init()
+
+# 화면 크기 설정
+screen_size = pygame.display.set_mode((800, 600))
+pygame.display.set_caption("반응 속도 테스트")
+
+# 색상 설정
+color_white = (255, 255, 255)  # 흰색
+color_black = (0, 0, 0)         # 검은색
+color_energy = (0, 255, 0)      # 에너지 바 색상
+color_button = (0, 128, 255)    # 버튼 색상
+color_button_hover = (0, 100, 200)  # 버튼 호버 색상
+color_gray = (192, 192, 192)    # 회색
+
+# 폰트 설정
+font = pygame.font.Font(None, 36)
+
+# 에너지 바 및 타이머 변수
+max_energy = 400  # 최대 에너지 바 길이
+current_energy = max_energy
+energy_depletion_rate = 2000  # 에너지가 줄어드는 속도 (밀리초)
+start_time = None  # 카운트다운 시작 시간
+is_counting_down = False  # 카운트다운 상태
+
+# 버튼 텍스트 설정
+text_start = font.render("Game Start", True, color_black)
+text_start_rect = text_start.get_rect(center=(400, 300))
+text_how_to_play = font.render("Explanation", True, color_black)
+text_how_to_play_rect = text_how_to_play.get_rect(center=(400, 400))
+
+# 게임 루프
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            # "게임 시작" 버튼 클릭
+            if text_start_rect.collidepoint(event.pos):
+                start_time = pygame.time.get_ticks()
+                is_counting_down = True
+                current_energy = max_energy  # 에너지를 최대값으로 초기화
+
+    # 화면을 흰색으로 채우기
+    screen_size.fill(color_white)
+
+    # 카운트다운이 진행 중일 때
+    if is_counting_down:
+        elapsed_time = pygame.time.get_ticks() - start_time
+        current_energy = max(max_energy - (elapsed_time / energy_depletion_rate) * max_energy, 0)
+
+        # 에너지가 다 소진되면 카운트다운 중지
+        if current_energy <= 0:
+            current_energy = 0
+            is_counting_down = False  # 카운트다운 종료
+
+        # 에너지 바 그리기
+        pygame.draw.rect(screen_size, color_energy, (200, 50, current_energy, 30))
+        pygame.draw.rect(screen_size, color_black, (200, 50, max_energy, 30), 2)  # 에너지 바 테두리
+
+        # 남은 시간 계산
+        remaining_time = max(0, (energy_depletion_rate - elapsed_time) / 1000)  # 초 단위로 변환
+        timer_text = font.render(f"TIme: {remaining_time:.1f}s", True, color_black)  # 소수점 첫째 자리까지 표시
+        screen_size.blit(timer_text, (200, 100))  # 타이머 텍스트 표시
+
+    # "게임 시작" 버튼 그리기
+    mouse_pos = pygame.mouse.get_pos()
+    if text_start_rect.collidepoint(mouse_pos):
+        pygame.draw.rect(screen_size, color_button_hover, text_start_rect.inflate(10, 10))
+    else:
+        pygame.draw.rect(screen_size, color_button, text_start_rect.inflate(10, 10))
+    
+    # 버튼 텍스트 그리기
+    screen_size.blit(text_start, text_start_rect)
+    screen_size.blit(text_how_to_play, text_how_to_play_rect)
+
+    # 화면 업데이트
+    pygame.display.flip()
+    pygame.time.delay(30)  # FPS 조정
+
+# Pygame 종료
+pygame.quit()
