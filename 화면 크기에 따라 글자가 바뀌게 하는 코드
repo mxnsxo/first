@@ -1,0 +1,73 @@
+# Pygame 초기화
+pygame.init()
+
+# 화면 크기 설정
+screen_size = pygame.display.set_mode((800, 600), pygame.RESIZABLE)
+pygame.display.set_caption("BST")
+screen_width, screen_height = screen_size.get_size()  # 화면 크기 변수
+
+# 색상 설정
+color_white = (255, 255, 255)  # 흰색
+color_black = (0, 0, 0)         # 검은색
+color_button = (0, 128, 255)    # 버튼 색상
+color_button_hover = (0, 100, 200)  # 버튼 호버 색상
+color_gray = (192, 192, 192)     # 밝은 회색
+color_energy = (0, 255, 0)      # 에너지 바 색상
+
+# 폰트 설정
+font = pygame.font.Font(None, 96)  # 기본 폰트, 크기 74
+font_small = pygame.font.Font(None, 36)  # 작은 폰트, 크기 36
+font_mid = pygame.font.Font(None, 40) # 중간 폰트, 크기 40
+font_very_small = pygame.font.Font(None, 25) # Back에 쓸 폰트, 크기 25
+font_normal_mid = pygame.font.Font(None, 55) # 크기 55
+font_title = pygame.font.Font(None, 50)  # 타이틀 폰트, 크기 50 추가
+font_title2 = pygame.font.Font(None, 74) # 
+
+# 텍스트 생성
+text_start = font_title2.render("Game Start", True, color_black) # 시작 버튼
+text_how_to_play = font_normal_mid.render("Explanation", True, color_black) # 게임 방법
+text_how_to_play_button_output = font_title2.render("This is how to play", True, color_black)  # 게임 방법 눌렀을 때 부제 느낌 ### 이거 앞에 기호 생성하고 싶은데 잘 안 됨 수정 필요
+text_Back = font_very_small.render("Back", True, color_black) # 게임 방법 눌렀을 때 다시 돌아가는 버튼
+text_EPN1 = font_mid.render("1.Click the Game Start Button", True, color_black) # 게임 방법을 눌렀을 때 나오는 설명(1) 
+text_EPN2 = font_mid.render("2.Choose Difficulty", True, color_black) # 게임 방법을 눌렀을 때 나오는 설명(2)
+text_EPN3 = font_mid.render("3.Click the Red Tile Quickly", True, color_black) # 게임 방법을 눌렀을 때 나오는 설명(3)
+text_ez = font_normal_mid.render("EASY", True, color_black) # 게임 시작 눌렀을 때 EZ 버튼
+text_nm = font_normal_mid.render("NORMAL", True, color_black) # 게임 시작 눌렀을 때 NM 버튼
+text_hd = font_normal_mid.render("HARD", True, color_black) # 게임 시작 눌렀을 때 HD 버튼
+text_BACK = font_mid.render("Back", True, color_black) # 게임 시작 눌렀을 때 Back 버튼
+text_difficulty = font_normal_mid.render("Choose DIFFICULTY", True, color_black) # 게임 시작 > 난이도 설정 중 상단에 "난이도"
+text_Tutorial = font_small.render("Tutorial", True, color_black) # 튜토리얼 버튼
+text_Setting = font_small.render("Setting", True, color_black) #설정
+text_Title = font.render("Find the Other Word", True, color_black) # 게임제목
+text_BAck = font_very_small.render("Back", True, color_black) #튜토리얼에서 Back 버튼
+
+# 버튼과 텍스트 위치 계산 함수
+def update_positions():
+    global text_start_rect, text_how_to_play_rect, text_how_to_play_button_output_rect, text_Back_rect
+    global text_EPN1_rect, text_EPN2_rect, text_EPN3_rect, text_ez_rect, text_nm_rect, text_hd_rect
+    global text_BACK_rect, text_difficulty_rect, text_Tutorial_rect, text_Title_rect, text_Setting_rect, text_BAck_rect
+
+    # 화면 크기에 맞게 버튼과 텍스트의 위치를 재계산
+    text_start_rect = text_start.get_rect(center=(screen_width // 2, screen_height // 2 - 100))
+    text_how_to_play_rect = text_how_to_play.get_rect(center=(screen_width // 2, screen_height // 2))
+    text_how_to_play_button_output_rect = text_how_to_play_button_output.get_rect(center=(screen_width // 2, 128))
+    text_Back_rect = text_Back.get_rect(center=(screen_width // 2, screen_height - 120))
+    
+    text_EPN1_rect = text_EPN1.get_rect(center=(screen_width // 2, screen_height // 2 - 150))
+    text_EPN2_rect = text_EPN2.get_rect(center=(screen_width // 2, screen_height // 2))
+    text_EPN3_rect = text_EPN3.get_rect(center=(screen_width // 2, screen_height // 2 + 150))
+    
+    text_ez_rect = text_ez.get_rect(midleft=(60, screen_height // 2))
+    text_nm_rect = text_nm.get_rect(center=(screen_width // 2, screen_height // 2))
+    text_hd_rect = text_hd.get_rect(midright=(screen_width - 60, screen_height // 2))
+    
+    text_BACK_rect = text_BACK.get_rect(center=(screen_width // 2, screen_height - 100))
+    text_difficulty_rect = text_difficulty.get_rect(center=(screen_width // 2, screen_height // 6))
+    
+    text_Tutorial_rect = text_Tutorial.get_rect(center=(screen_width // 2 - 100, screen_height - 150))
+    text_Title_rect = text_Title.get_rect(center=(screen_width // 2, 120))
+    text_Setting_rect = text_Setting.get_rect(midright=(screen_width // 2 + 150, screen_height - 150))
+    text_BAck_rect = text_BAck.get_rect(bottomleft=(200,500))
+
+# 텍스트와 버튼 위치 초기화 이후 위치 설정 호출
+update_positions()
