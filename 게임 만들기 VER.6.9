@@ -1,0 +1,286 @@
+from cmath import rect
+from networkx import center
+import pygame, sys
+from pygame.locals import *
+
+# Pygame 초기화
+pygame.init()
+
+# 화면 크기 설정
+screen_size = pygame.display.set_mode((800, 600))
+pygame.display.set_caption("BST")
+
+# 색상 설정
+color_white = (255, 255, 255)  # 흰색
+color_black = (0, 0, 0)         # 검은색
+color_button = (0, 128, 255)    # 버튼 색상
+color_button_hover = (0, 100, 200)  # 버튼 호버 색상
+color_gray = (192, 192, 192)     # 밝은 회색
+color_energy = (0, 255, 0)      # 에너지 바 색상
+color_red = (255, 0, 0)
+color_A_gray = (169, 169, 169, 5) # 투명 회색
+
+# 폰트 설정
+font = pygame.font.Font(None, 96)  # 기본 폰트, 크기 74
+font_small = pygame.font.Font(None, 36)  # 작은 폰트, 크기 36
+font_mid = pygame.font.Font(None, 40) # 중간 폰트, 크기 40
+font_very_small = pygame.font.Font(None, 25) # Back에 쓸 폰트, 크기 25
+font_normal_mid = pygame.font.Font(None, 55) # 크기 55
+font_title = pygame.font.Font(None, 50)  # 타이틀 폰트, 크기 50 추가
+font_title2 = pygame.font.Font(None, 74) # 
+
+# 텍스트 생성
+text_start = font_title2.render("Game Start", True, color_black) # 시작 버튼
+text_how_to_play = font_normal_mid.render("Explanation", True, color_black) # 게임 방법
+text_how_to_play_button_output = font_title2.render("This is how to play", True, color_black)  # 게임 방법 눌렀을 때 부제 느낌 ### 이거 앞에 기호 생성하고 싶은데 잘 안 됨 수정 필요
+text_Back = font_very_small.render("<- Back", True, color_black) # 게임 방법 눌렀을 때 다시 돌아가는 버튼
+text_EPN1 = font_mid.render("1.Click the Game Start Button", True, color_black) # 게임 방법을 눌렀을 때 나오는 설명(1) 
+text_EPN2 = font_mid.render("2.Choose Difficulty", True, color_black) # 게임 방법을 눌렀을 때 나오는 설명(2)
+text_EPN3 = font_mid.render("3.Click the Red Tile Quickly", True, color_black) # 게임 방법을 눌렀을 때 나오는 설명(3)
+text_ez = font_normal_mid.render("EASY", True, color_black) # 게임 시작 눌렀을 때 EZ 버튼
+text_nm = font_normal_mid.render("NORMAL", True, color_black) # 게임 시작 눌렀을 때 NM 버튼
+text_hd = font_normal_mid.render("HARD", True, color_black) # 게임 시작 눌렀을 때 HD 버튼
+text_BACK = font_mid.render("<- Back", True, color_black) # 게임 시작 눌렀을 때 Back 버튼
+text_difficulty = font_normal_mid.render("Choose DIFFICULTY", True, color_black) # 게임 시작 > 난이도 설정 중 상단에 "난이도"
+text_Tutorial = font_small.render("Tutorial", True, color_black) # 튜토리얼 버튼
+text_Setting = font_small.render("Setting", True, color_black) #설정
+text_Title = font.render("Find the Other Word", True, color_black) # 게임제목
+text_BAck = font_small.render("<- Back", True, color_black) #튜토리얼에서 Back 버튼
+text_Error = font.render("404 Error", True, color_red) # Setting 눌렀을 때 나오는 에러 이스터에그?
+text_PNF = font_title2.render("Page Not Found", True, color_white) # Setting 눌렀을 때 나오는 에러 이스터에그?
+text_BACk = font_normal_mid.render("<- Back", True, color_white) # Setting 눌렀을 때 Back 버튼
+
+# 텍스트 위치 설정
+text_start_rect = text_start.get_rect(center=(400, 250))  # 화면 중앙에 위치
+text_how_to_play_rect = text_how_to_play.get_rect(center=(400, 350))  # 아래에 위치
+text_how_to_play_button_output_rect = text_how_to_play_button_output.get_rect(center=(400, 128))  # 설명 텍스트 위치
+text_Back_rect = text_Back.get_rect(center=(400, 480))  # Back 버튼 위치 설정
+text_EPN1_rect = text_EPN1.get_rect(center=(400, 200)) # 1번 설명 뜨게하기
+text_EPN2_rect = text_EPN2.get_rect(center=(400, 300)) # 2번 설명 뜨게
+text_EPN3_rect = text_EPN3.get_rect(center=(400,400)) # 3번 설명 뜨게
+text_ez_rect = text_ez.get_rect(midleft=(60, 300)) # 게임 시작 눌렀을 때 EZ 뜨게하기
+text_nm_rect = text_nm.get_rect(center=(400, 300)) # 게임 시작 눌렀을 때 NM 뜨게하기
+text_hd_rect = text_hd.get_rect(midright=(740, 300)) # 게임 시작 눌렀을 때 HD 뜨게하기
+text_BACK_rect = text_BACK.get_rect(center=(400, 500)) # 게임 시작 눌렀을 때 난이도 설정 창에서 Back 버튼
+text_difficulty_rect = text_difficulty.get_rect(center=(400, 120)) # 게임 시작 눌렀을 때 난이도 창에서 "난이도"
+text_Tutorial_rect = text_Tutorial.get_rect(center=(300, 430)) # 튜토리얼 버튼(Explantion 버튼 아래에 위치)
+text_Title_rect = text_Title.get_rect(center=(400, 120)) # 게임 제목 위치
+text_Setting_rect = text_Setting.get_rect(midright=(550, 430)) #메인 화면에서 "Setting" 위치
+text_BAck_rect = text_BAck.get_rect(bottomleft=(100,550)) # 튜토리얼 화면에서 "Back" 위치
+text_Error_rect = text_Error.get_rect(center=(400, 200)) # Setting 눌렀을 때 나오는 에러 이스터에그?
+text_PNF_rect = text_PNF.get_rect(center=(400, 250)) #Setting 눌렀을 때 나오는 에러 이스터에그?
+text_BACk_rect = text_BACk.get_rect(bottomleft=(100,550)) # Setting 눌렀을 때 나오는 Back 버튼
+
+
+# 설명창 여부
+show_info_window = False
+
+# 난이도 설정 화면 여부
+show_difficulty_screen = False
+
+# 튜토리얼 화면 여부
+show_tutorial_screen = False
+
+# 세팅 화면 여부
+show_setting_screen = False
+
+# Easy 버튼을 눌렀을 때 화면 여부
+show_eazy_output_screen = False
+
+#에너지 바 및 타이머
+max_energy = 400  # 최대 에너지 바 길이
+current_energy = max_energy
+energy_depletion_rate = 10000  # 에너지가 줄어드는 속도 (밀리초)
+start_time = None  # 카운트다운 시작 시간
+is_counting_down = False  # 카운트다운 상태
+
+# 튜토리얼 눌렀을 때 n 초 후 회색 화면이 활성화되며 모든 게 멈추게 됨
+n = 2
+start_ticks = pygame.time.get_ticks()
+
+# 게임 루프
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == MOUSEBUTTONDOWN:  # 마우스 버튼이 눌리면
+            if not show_info_window and not show_difficulty_screen and not show_tutorial_screen and not show_setting_screen and not show_eazy_output_screen:
+                if text_start_rect.collidepoint(event.pos):  # "게임 시작" 버튼 클릭
+                    show_difficulty_screen = True  # 난이도 설정 화면 활성화
+                elif text_how_to_play_rect.collidepoint(event.pos):  # "게임 방법" 버튼 클릭
+                    show_info_window = True  # 설명창 활성화
+                elif text_Tutorial_rect.collidepoint(event.pos):  # "튜토리얼" 버튼 클릭
+                    show_tutorial_screen = True  # 튜토리얼 화면 활성화
+                    start_time = pygame.time.get_ticks()
+                    is_counting_down = True
+                    current_energy = max_energy
+                elif text_Setting_rect.collidepoint(event.pos): #"세팅" 버튼 클릭
+                    show_setting_screen = True # 세팅 화면 활성화
+            elif show_info_window and text_Back_rect.collidepoint(event.pos):  # 설명창의 "Back" 버튼 클릭
+                show_info_window = False  # 설명창 숨기기
+            elif show_difficulty_screen and text_BACK_rect.collidepoint(event.pos):  # 난이도 설정 화면의 "Back" 버튼 클릭
+                show_difficulty_screen = False  # 난이도 설정 화면 숨기기
+            elif show_tutorial_screen and text_BAck_rect.collidepoint(event.pos):  # 튜토리얼 화면의 "Back" 버튼 클릭
+                show_tutorial_screen = False  # 튜토리얼 화면 숨기기
+            elif show_setting_screen and text_BACk_rect.collidepoint(event.pos): # setting 화면의 "Back" 버튼 클릭
+                show_setting_screen = False # setting 화면 숨기기
+   
+    # 화면을 흰색으로 채우기
+    screen_size.fill(color_white)
+
+    # 시간 계산 코드
+    seconds = (pygame.time.get_ticks() - start_ticks) / 1000
+
+    # 카운트다운이 진행 중일 때
+    if is_counting_down:
+        elapsed_time = pygame.time.get_ticks() - start_time
+        current_energy = max(max_energy - (elapsed_time / energy_depletion_rate) * max_energy, 0)
+
+        # 에너지가 다 소진되면 카운트다운 중지
+        if current_energy <= 0:
+            current_energy = 0
+            is_counting_down = False  # 카운트다운 종료
+        elif event.type ==MOUSEBUTTONDOWN:
+            if text_BAck_rect.collidepoint(event.pos):
+                is_counting_down = False
+                show_tutorial_screen = False 
+                current_energy = max_energy
+
+
+        # 에너지 바 그리기
+        pygame.draw.rect(screen_size, color_energy, (200, 50, current_energy, 30))
+        pygame.draw.rect(screen_size, color_black, (200, 50, max_energy, 30), 2)  # 에너지 바 테두리
+
+        # 남은 시간 계산
+        remaining_time = max(0, (energy_depletion_rate - elapsed_time) / 1000)  # 초 단위로 변환
+        timer_text = font_normal_mid.render(f"Time: {remaining_time:.1f}s", True, color_black)  # 소수점 첫째 자리까지 표시
+        screen_size.blit(timer_text, (200, 100))  # 타이머 텍스트 표시
+
+    # 난이도 설정 화면이 활성화되었을 때
+    if show_difficulty_screen and not show_eazy_output_screen:
+    # 마우스 위치에 따라 버튼 색상 변경
+        mouse_pos = pygame.mouse.get_pos()
+    
+        # EASY 버튼
+        if text_ez_rect.collidepoint(mouse_pos):
+            pygame.draw.rect(screen_size, color_button_hover, text_ez_rect.inflate(20, 20))
+        else:
+            pygame.draw.rect(screen_size, color_button, text_ez_rect.inflate(20, 20))
+
+        # NORMAL 버튼
+        if text_nm_rect.collidepoint(mouse_pos):
+            pygame.draw.rect(screen_size, color_button_hover, text_nm_rect.inflate(20, 20))
+        else:
+            pygame.draw.rect(screen_size, color_button, text_nm_rect.inflate(20, 20))
+
+        # HARD 버튼
+        if text_hd_rect.collidepoint(mouse_pos):
+            pygame.draw.rect(screen_size, color_button_hover, text_hd_rect.inflate(20, 20))
+        else:
+            pygame.draw.rect(screen_size, color_button, text_hd_rect.inflate(20, 20))
+
+        # 타원형 그리기 (Choose DIFFICULTY 배경)
+        pygame.draw.ellipse(screen_size, color_gray, (200, 70, 400, 100))  # 위치와 크기 조정
+
+        # 버튼 텍스트 그리기
+        screen_size.blit(text_ez, text_ez_rect)
+        screen_size.blit(text_nm, text_nm_rect)
+        screen_size.blit(text_hd, text_hd_rect)
+        screen_size.blit(text_BACK, text_BACK_rect)
+        screen_size.blit(text_difficulty, text_difficulty_rect)
+
+    for event in pygame.event.get():
+        if event.type == QUIT:
+            pygame.quit()
+            sys.exit()
+        
+        elif event.type == MOUSEBUTTONDOWN:  # 마우스 버튼이 눌렸을 때만 event.pos 사용
+            # EASY 버튼 클릭 처리
+            if text_ez_rect.collidepoint(event.pos):
+                show_eazy_output_screen = True
+                show_difficulty_screen = False  # 난이도 설정 화면 숨기기
+            
+            # EASY 출력 화면에서 BACK 버튼 클릭 처리
+            elif show_eazy_output_screen and text_BAck_rect.collidepoint(event.pos):
+                show_eazy_output_screen = False
+                show_difficulty_screen = True  # 난이도 설정 화면으로 돌아가기
+
+            screen_size.blit(text_BAck, text_BAck_rect)
+
+
+        # 메인 화면 (기존 화면)
+    if not show_difficulty_screen and not show_info_window and not show_tutorial_screen and not show_setting_screen and not show_eazy_output_screen : # 버튼 눌렀을 때 다른 화면 안 보이게 하고 싶으면 여기에 screen 코드 추가
+        mouse_pos = pygame.mouse.get_pos()
+
+        # "Game Start" 버튼
+        pygame.draw.rect(screen_size, color_button, text_start_rect.inflate(40, 20))  # 버튼 크기 조정
+        if text_start_rect.collidepoint(mouse_pos):
+            pygame.draw.rect(screen_size, color_button_hover, text_start_rect.inflate(40, 20))
+        else:
+            pygame.draw.rect(screen_size, color_button, text_start_rect.inflate(40, 20))
+
+        # "Explanation" 버튼
+        if text_how_to_play_rect.collidepoint(mouse_pos):
+            pygame.draw.rect(screen_size, color_button_hover, text_how_to_play_rect.inflate(20, 20))
+        else:
+            pygame.draw.rect(screen_size, color_button, text_how_to_play_rect.inflate(20, 20))
+
+        # "Tutorial" 버튼
+        if text_Tutorial_rect.collidepoint(mouse_pos):
+            pygame.draw.rect(screen_size, color_button_hover, text_Tutorial_rect.inflate(20, 20))
+        else:
+            pygame.draw.rect(screen_size, color_button, text_Tutorial_rect.inflate(20, 20))
+
+        # "Setting" 버튼
+        if text_Setting_rect.collidepoint(mouse_pos):
+            pygame.draw.rect(screen_size, color_button_hover, text_Setting_rect.inflate(20, 20))
+        else:
+            pygame.draw.rect(screen_size, color_button, text_Setting_rect.inflate(20, 20))
+            
+        # 텍스트 그리기
+        screen_size.blit(text_start, text_start_rect) 
+        screen_size.blit(text_how_to_play, text_how_to_play_rect)
+        screen_size.blit(text_Tutorial, text_Tutorial_rect)
+        screen_size.blit(text_Title, text_Title_rect)
+        screen_size.blit(text_Setting, text_Setting_rect)
+
+    # 설명 창이 활성화되었을 때
+    if show_info_window:
+        pygame.draw.rect(screen_size, color_gray, (150, 100, 500, 400))  # 회색 창
+        screen_size.blit(text_how_to_play_button_output, text_how_to_play_button_output_rect)  # 설명 텍스트 그리기
+        screen_size.blit(text_Back, text_Back_rect)  # Back 버튼 그리기
+        screen_size.blit(text_EPN1, text_EPN1_rect)
+        screen_size.blit(text_EPN2, text_EPN2_rect)
+        screen_size.blit(text_EPN3, text_EPN3_rect)
+
+    # 튜토리얼 화면이 활성화되었을 때
+    if show_tutorial_screen:
+        elapsed_time = (pygame.time.get_ticks() - start_time) / 1000
+        screen_size.blit(text_BAck, text_BAck_rect)  # Back 버튼 그리기
+        
+            
+        if elapsed_time >= n :
+            screen_size.fill(color_A_gray)
+
+            screen_size.blit(text_BAck, text_BAck_rect)  # Back 버튼 그리기
+
+            
+
+    # setting 화면이 활성화되었을 때
+    if show_setting_screen:
+        screen_size.fill(color_black)
+        screen_size.blit(text_BACk, text_BACk_rect)
+        screen_size.blit(text_Error, text_Error_rect)
+        screen_size.blit(text_PNF, text_PNF_rect)
+
+    
+
+    # 화면 업데이트
+    pygame.display.flip()
+    pygame.time.delay(30)
+
+
+# Pygame 종료
+pygame.quit()
