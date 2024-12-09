@@ -1,0 +1,1042 @@
+from cmath import rect
+from pydoc import text
+from networkx import center
+import pygame, sys
+from pygame.locals import *
+import tkinter as tk
+import random
+import time
+
+# Pygame 초기화
+pygame.init()
+
+# 화면 크기 설정
+initial_screen_size = (800, 600)
+screen_size = pygame.display.set_mode(initial_screen_size, RESIZABLE)  # RESIZABLE 플래그 추가
+pygame.display.set_caption("BST")
+
+# 색상 설정
+color_white = (255, 255, 255)  # 흰색
+color_black = (0, 0, 0)         # 검은색
+color_button = (0, 128, 255)    # 버튼 색상
+color_button_hover = (0, 100, 200)  # 버튼 호버 색상
+color_gray = (192, 192, 192)     # 밝은 회색
+color_energy = (0, 255, 0)      # 에너지 바 색상
+color_red = (255, 0, 0)
+color_A_gray = (169, 169, 169, 5) # 투명 회색
+font_large = pygame.font.Font(None, 100)  # 큰 폰트 사이즈
+try:
+    # Windows의 경우
+    font = pygame.font.Font("C:/Windows/Fonts/malgun.ttf", 76)  # 기본 폰트, 크기 96
+    font_small = pygame.font.Font("C:/Windows/Fonts/malgun.ttf", 25)  # 작은 폰트, 크기 36
+    font_mid = pygame.font.Font("C:/Windows/Fonts/malgun.ttf", 20)  # 중간 폰트, 크기 40
+    font_very_small = pygame.font.Font("C:/Windows/Fonts/malgun.ttf", 18)  # Back에 쓸 폰트, 크기 25
+    font_normal_mid = pygame.font.Font("C:/Windows/Fonts/malgun.ttf", 40)  # 크기 55
+    font_title = pygame.font.Font("C:/Windows/Fonts/malgun.ttf", 30)  # 타이틀 폰트, 크기 50
+    font_title2 = pygame.font.Font("C:/Windows/Fonts/malgun.ttf", 54)  # 크기 74
+    font_clear = pygame.font.Font("C:/Windows/Fonts/malgun.ttf", 120)  # 클리어 텍스트용 큰 폰트
+    font_score = pygame.font.Font("C:/Windows/Fonts/malgun.ttf", 20)  # 점수 설명용 작은 폰트
+except:
+    # 폰트 파일을 찾을 수 없는 경우의 대체 설정
+    font = pygame.font.SysFont("arial", 76)
+    font_small = pygame.font.SysFont("arial", 25)
+    font_mid = pygame.font.SysFont("arial", 20)
+    font_very_small = pygame.font.SysFont("arial", 18)
+    font_normal_mid = pygame.font.SysFont("arial", 40)
+    font_title = pygame.font.SysFont("arial", 30)
+    font_title2 = pygame.font.SysFont("arial", 54)
+    font_clear = pygame.font.SysFont("arial", 120)
+    
+# Easy 게임 관련 변수 추가
+GRID_SIZE = 4
+CELL_SIZE = 80
+GRID_MARGIN = 5
+GRID_OFFSET_X = 200
+GRID_OFFSET_Y = 150
+
+# 게임 상태 변수
+game_grid = []
+different_pos = None
+game_started = False
+game_clear = False
+game_over = False
+clear_time = 0  
+countdown_started = False  # 카운트다운 시작 여부
+show_cards = False  # 카드 표시 여부
+game_stage = 1  # 현재 게임 단계 (1~3)
+current_difficulty = 'easy' 
+final_clear_time = 0  
+
+# 화면 크기 비율 계산 함수
+def calculate_scale_factor(current_size):
+    width_scale = current_size[0] / initial_screen_size[0]
+    height_scale = current_size[1] / initial_screen_size[1]
+    return min(width_scale, height_scale)  # 비율을 최소로 설정
+
+
+# 게임 그리드 생성 함수
+def create_game_grid():
+    global game_grid, different_pos
+    game_grid = [['가' for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+    x = random.randint(0, GRID_SIZE-1)
+    y = random.randint(0, GRID_SIZE-1)
+    different_pos = (x, y)
+    game_grid[y][x] = '각'
+
+
+def create_game_grid(difficulty='easy'):
+    global game_grid, different_pos, GRID_SIZE
+    
+    # 난이도에 따른 그리드 크기 설정
+    if difficulty == 'hard':
+        GRID_SIZE = 5  # Hard 난이도는 5x5
+    else:
+        GRID_SIZE = 4  # Easy와 Normal은 4x4
+    
+    # 비슷한 글자 쌍들을 리스트로 정의
+    easy_pairs = [
+        ('핵', '학'),
+        ('달', '돌'),
+        ('묵', '목'),
+        ('can', 'cen'),
+        ('hit', 'hat'),
+        ('how', 'who'),
+        ('삵', '칡'),
+        ('do', 'bo'),
+        ('hi', 'ni'),
+        ('oh', 'on'),
+        ('꿀', '꼴'),
+        ('밤', '범'),
+        ('입', '잎')
+    ]
+
+    normal_pairs = [
+        ('둘리', '돌리'),
+        ('계란', '개란'),
+        ('미역', '미억'),
+        ('game', 'gama'),
+        ('nice', 'niee'),
+        ('long', 'ling'),
+        ('짱구', '찡구'),
+        ('AIR', 'AIP'),
+        ('bye', 'dye'),
+        ('mouse', 'mause'),
+        ('screen', 'scteen'),
+        ('window', 'windew'),
+        ('folder', 'forder'),
+        ('python', 'pyton'),
+        ('coffee', 'coffe'),
+        ('banana', 'banena'),
+        ('orange', 'oragne'),
+        ('pencil', 'pensil'),
+        ('coding', 'codeng'),
+        ('python', 'pyhton'),
+        ('system', 'systam'),
+    ]
+    
+    hard_pairs = [
+        ('capslock', 'capclock'),
+        ('수능특강', '수능득강'),
+        ('effect', 'effact'),
+        ('advice', 'advise'),
+        ('whether', 'weather'),
+        ('healthy', 'heaIthy'),
+        ('자축인묘', '자축임묘'),
+        ('feather', 'feathar'),
+        ('환골탈태', '환곤탈태'),
+        ('control', 'controI'),
+        ('keyboard', 'keybaord'),
+        ('minimal', 'minlmal'),
+        ('organic', 'organie'),
+        ('primary', 'prlmary'),
+        ('genuine', 'genuiue'),
+        ('liberal', 'liberaI'),
+        ('perform', 'perfonn'),
+        ('diverse', 'diverce'),
+        ('satisfy', 'saticfy')
+    ]
+
+    # 난이도에 따른 글자 쌍 선택
+    if difficulty == 'hard':
+        letter_pairs = hard_pairs
+    elif difficulty == 'normal':
+        letter_pairs = normal_pairs
+    else:
+        letter_pairs = easy_pairs
+
+    main_char, different_char = random.choice(letter_pairs)
+    game_grid = [[main_char for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+    x = random.randint(0, GRID_SIZE-1)
+    y = random.randint(0, GRID_SIZE-1)
+    different_pos = (x, y)
+    game_grid[y][x] = different_char
+
+    # 랜덤하게 글자 쌍 선택
+    main_char, different_char = random.choice(letter_pairs)
+    
+    # 그리드 생성 (이전의 '가'대신 main_char 사용)
+    game_grid = [[main_char for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+    
+    # 랜덤 위치 선택
+    x = random.randint(0, GRID_SIZE-1)
+    y = random.randint(0, GRID_SIZE-1)
+    different_pos = (x, y)
+    
+    # 선택된 위치에 다른 글자 넣기 (이전의 '각' 대신 different_char 사용)
+    game_grid[y][x] = different_char
+
+# 게임 그리드 그리기 함수를 별도로 정의
+def draw_game_grid(screen):
+    global CELL_SIZE, GRID_OFFSET_X, GRID_SIZE
+    
+    # 현재 그리드에서 가장 긴 글자의 길이 찾기
+    max_len = 0
+    for row in game_grid:
+        for cell in row:
+            max_len = max(max_len, len(str(cell)))
+    
+    # 글자 길이와 그리드 크기에 따라 셀 크기 조정
+    if GRID_SIZE == 5:  # Hard 난이도
+        if max_len <= 1:
+            CELL_SIZE = 65
+            font_size = 35
+        elif max_len <= 2:
+            CELL_SIZE = 70
+            font_size = 30
+        elif max_len <= 3:
+            CELL_SIZE = 75
+            font_size = 25
+        else:
+            CELL_SIZE = 80
+            font_size = 20
+    else:  # Easy, Normal 난이도
+        if max_len <= 1:
+            CELL_SIZE = 70
+            font_size = 40
+        elif max_len <= 2:
+            CELL_SIZE = 75
+            font_size = 35
+        elif max_len <= 3:
+            CELL_SIZE = 80
+            font_size = 30
+        else:
+            CELL_SIZE = 85
+            font_size = 25
+    
+    # 그리드 중앙 정렬을 위한 오프셋 재계산
+    total_width = GRID_SIZE * (CELL_SIZE + GRID_MARGIN) - GRID_MARGIN
+    GRID_OFFSET_X = (800 - total_width) // 2
+    
+    # 동적 폰트 생성
+    try:
+        dynamic_font = pygame.font.Font("C:/Windows/Fonts/malgun.ttf", font_size)
+    except:
+        dynamic_font = pygame.font.SysFont("arial", font_size)
+    
+    for y in range(GRID_SIZE):
+        for x in range(GRID_SIZE):
+            rect = pygame.Rect(
+                GRID_OFFSET_X + x * (CELL_SIZE + GRID_MARGIN),
+                GRID_OFFSET_Y + y * (CELL_SIZE + GRID_MARGIN),
+                CELL_SIZE,
+                CELL_SIZE
+            )
+            pygame.draw.rect(screen, color_button, rect)
+            # 동적 폰트로 텍스트 렌더링
+            text = dynamic_font.render(game_grid[y][x], True, color_black)
+            text_rect = text.get_rect(center=rect.center)
+            screen.blit(text, text_rect)
+
+def calculate_score(clear_time, difficulty):
+    if difficulty == 'normal':
+        if clear_time <= 9.0:
+            return 100
+        elif clear_time <= 9.5:
+            return 95
+        elif clear_time <= 10.0:
+            return 90
+        else:
+            # 10초 초과시 1초당 10점씩 감소 (최소 1점)
+            return max(1, 90 - int((clear_time - 10.0) * 10))
+    elif difficulty == 'hard':
+        if clear_time <= 13.0:
+            return 100
+        elif clear_time <= 13.5:
+            return 95
+        elif clear_time <= 14.0:
+            return 90
+        else:
+            # 14초 초과시 1초당 10점씩 감소 (최소 1점)
+            return max(1, 90 - int((clear_time - 14.0) * 10))
+    return 0
+
+# 버튼 그리기 함수 추가 (코드 시작 부분에 추가)
+def draw_modern_button(surface, rect, color, hover=False, border_radius=10):
+    """현대적인 버튼 그리기"""
+    # 그림자 효과
+    shadow_rect = rect.inflate(4, 4)
+    shadow_rect.y += 2
+    pygame.draw.rect(surface, (0, 0, 0, 64), shadow_rect, border_radius=border_radius)
+    
+    # 메인 버튼
+    pygame.draw.rect(surface, color, rect, border_radius=border_radius)
+    
+    # 호버 효과
+    if hover:
+        highlight = pygame.Surface(rect.size, pygame.SRCALPHA)
+        pygame.draw.rect(highlight, (255, 255, 255, 30), highlight.get_rect(), border_radius=border_radius)
+        surface.blit(highlight, rect)
+
+# 텍스트 생성
+text_start = font_title2.render("Game Start", True, color_black) # 시작 버튼
+text_how_to_play = font_normal_mid.render("게임 방법", True, color_black) # 게임 방법
+text_how_to_play_button_output = font_title2.render("게임 방법", True, color_black)  # 게임 방법 눌렀을 때 부제 느낌 ### 이거 앞에 기호 생성하고 싶은데 잘 안 됨 수정 필요
+text_Back = font_very_small.render("<- Back", True, color_black) # 게임 방법 눌렀을 때 다시 돌아가는 버튼
+text_EPN1 = font_mid.render("1. 게임 시작 버튼을 누른다", True, color_black) # 게임 방법을 눌렀을 때 나오는 설명(1) 
+text_EPN2 = font_mid.render("2. 난이도를 선택한다", True, color_black) # 게임 방법을 눌렀을 때 나오는 설명(2)
+text_EPN3 = font_mid.render("3. 다른 글자 한 개를 고른다", True, color_black) # 게임 방법을 눌렀을 때 나오는 설명(3)
+text_EPN4 = font_mid.render("4. 다른 글자를 3번 연속 누르면 성공", True, color_black)
+text_EPN5 = font_mid.render("5. 한 번이라도 잘못 고르거나", True, color_red)
+text_EPN6 = font_mid.render("시간이 다 되면 Game Over", True, color_red)
+text_ez = font_normal_mid.render("EASY", True, color_black) # 게임 시작 눌렀을 때 EZ 버튼
+text_nm = font_normal_mid.render("NORMAL", True, color_black) # 게임 시작 눌렀을 때 NM 버튼
+text_hd = font_normal_mid.render("HARD", True, color_black) # 게임 시작 눌렀을 때 HD 버튼
+text_BACK = font_mid.render("<- Back", True, color_black) # 게임 시작 눌렀을 때 난이도 설정 창에서 Back 버튼
+text_difficulty = font_normal_mid.render("Choose Difficulty", True, color_black) # 게임 시작 > 난이도 설정 중 상단에 "난이도"
+text_Tutorial_button = font_small.render("스코어 시스템", True, color_black) # 튜토리얼 버튼
+text_Setting = font_small.render("     설정     ", True, color_black) #설정
+text_Title = font.render("Find the Other Word", True, color_black) # 게임제목
+text_BAck = font_small.render("<- Back", True, color_black) #튜토리얼에서 Back 버튼
+text_Error = font.render("404 Error", True, color_red) # Setting 눌렀을 때 나오는 에러 이스터에그?
+text_PNF = font_title2.render("Page Not Found", True, color_white) # Setting 눌렀을 때 나오는 에러 이스터에그?
+text_BACk = font_normal_mid.render("<- Back", True, color_white) # Setting 눌렀을 때 Back 버튼
+text_game_over = font_title2.render("Game Over", True, color_red)
+text_back_main = font_normal_mid.render("Back to Main", True, color_black)
+text_choose_diff = font_normal_mid.render("Choose Difficulty", True, color_black)
+text_play_again = font_normal_mid.render("Play Again", True, color_black)
+text_easy_E = font_very_small.render("♧ 4x4 크기의 카드들로", True, color_black)
+text_easy_E1 = font_very_small.render("    구성되어 있습니다.", True, color_black)
+text_easy_E2 = font_very_small.render("♧ 기록이 산출되지", True, color_black)
+text_easy_E3 = font_very_small.render("        않습니다.", True, color_black)
+text_normal_E = font_very_small.render("♧ 4x4 크기의 카드들로", True, color_black)
+text_normal_E1 = font_very_small.render("    구성되어 있습니다.", True, color_black)
+text_normal_E2 = font_very_small.render("♧ 기록이 산출되며 스코어 ", True, color_black)
+text_normal_E3 = font_very_small.render("   시스템에서 확인할 수 있습니다.", True, color_black)
+text_hard_E = font_very_small.render("♧ 5x5 크기의 카드들로", True, color_black)
+text_hard_E1 = font_very_small.render("    구성되어 있습니다.", True, color_black)
+text_hard_E2 = font_very_small.render("♧ 기록이 산출되며 ", True, color_black)
+text_hard_E3 = font_very_small.render("    스코어 시스템에서", True, color_black)
+text_hard_E4 = font_very_small.render("확인할 수 있습니다.", True, color_black)
+text_BaCK = font_small.render("<- Back", True, color_black) # 비활성화 돼있음
+text_tutorial2 = font_small.render("Normal 난이도:", True, color_black)
+text_tutorial3 = font_score.render("4.0초 안에 클리어 → 100점", True, color_black)
+text_tutorial4 = font_score.render("4.5초 안에 클리어 → 95점", True, color_black)
+text_tutorial5 = font_score.render("5.0초 안에 클리어 → 90점", True, color_black)
+text_tutorial6 = font_small.render("Hard 난이도:", True, color_black)
+text_tutorial7 = font_score.render("7.0초 안에 클리어 → 100점", True, color_black)
+text_tutorial8 = font_score.render("7.5초 안에 클리어 → 95점", True, color_black)
+text_tutorial9 = font_score.render("8.0초 안에 클리어 → 90점", True, color_black)
+text_tutorial10 = font_score.render("5.5초 안에 클리어 → 85점", True, color_black)
+text_tutorial11 = font_score.render("6.0초 안에 클리어 → 80점", True, color_black)
+text_tutorial12 = font_score.render("8.5초 안에 클리어 → 85점", True, color_black)
+text_tutorial13 = font_score.render("9.0초 안에 클리어 → 80점", True, color_black)
+text_Tutorial_title = font_title2.render("[ Score System ]", True, color_black)  # 스코어 시스템 화면 제목용
+text_Tutorial_shadow = font_title2.render("[ Score System ]", True, color_gray)  # 그림자 효과용
+
+
+
+text_clear = font_large.render("CLEAR!", True, color_black)
+text_clear_rect = text_clear.get_rect(center=(400, 200))  # 화면 상단 중앙에 위치
+
+# 텍스트 위치 설정
+text_start_rect = text_start.get_rect(center=(400, 250))  # 화면 중앙에 위치
+text_how_to_play_rect = text_how_to_play.get_rect(center=(400, 350))  # 아래에 위치
+text_how_to_play_button_output_rect = text_how_to_play_button_output.get_rect(center=(400, 128))  # 설명 텍스트 위치
+text_Back_rect = text_Back.get_rect(center=(400, 480))  # Back 버튼 위치 설정
+text_EPN1_rect = text_EPN1.get_rect(center=(400, 200)) # 1번 설명 뜨게하기
+text_EPN2_rect = text_EPN2.get_rect(center=(400, 250)) # 2번 설명 뜨게
+text_EPN3_rect = text_EPN3.get_rect(center=(400,300)) # 3번 설명 뜨게
+text_EPN4_rect = text_EPN4.get_rect(center=(400,350))
+text_EPN5_rect = text_EPN5.get_rect(center=(400, 400))
+text_EPN6_rect = text_EPN6.get_rect(center=(400, 440))
+text_ez_rect = text_ez.get_rect(midleft=(60, 300)) # 게임 시작 눌렀을 때 EZ 뜨게하기
+text_nm_rect = text_nm.get_rect(center=(400, 300)) # 게임 시작 눌렀을 때 NM 뜨게하기
+text_hd_rect = text_hd.get_rect(midright=(740, 300)) # 게임 시작 눌렀을 때 HD 뜨게하기
+text_BACK_rect = text_BACK.get_rect(center=(400, 540)) # 게임 시작 눌렀을 때 난이도 설정 창에서 Back 버튼
+text_Tutorial_rect = text_Tutorial_button.get_rect(center=(300, 430)) # 튜토리얼 버튼(Explantion 버튼 아래에 위치)
+text_Title_rect = text_Title.get_rect(center=(400, 120)) # 게임 제목 위치
+text_Setting_rect = text_Setting.get_rect(midright=(550, 430)) #메인 화면에서 "Setting" 위치
+text_BAck_rect = text_BAck.get_rect(bottomleft=(100,550)) # 튜토리얼 화면에서 "Back" 위치
+text_Error_rect = text_Error.get_rect(center=(400, 200)) # Setting 눌렀을 때 나오는 에러 이스터에그?
+text_PNF_rect = text_PNF.get_rect(center=(400, 250)) #Setting 눌렀을 때 나오는 에러 이스터에그?
+text_BACk_rect = text_BACk.get_rect(bottomleft=(100,550)) # Setting 눌렀을 때 나오는 Back 버튼
+text_game_over_rect = text_game_over.get_rect(center=(400, 200))
+text_back_main_rect = text_back_main.get_rect(center=(400, 380))
+text_choose_diff_rect = text_choose_diff.get_rect(center=(400, 450))
+text_play_again_rect = text_play_again.get_rect(center=(400, 520))
+text_easy_E_rect = text_easy_E.get_rect(bottomleft=(30,380))
+text_easy_E1_rect = text_easy_E1.get_rect(bottomleft=(30,400))
+text_easy_E2_rect = text_easy_E2.get_rect(bottomleft=(30,480))
+text_easy_E3_rect = text_easy_E3.get_rect(bottomleft=(30,500))
+text_normal_E_rect = text_normal_E.get_rect(center=(400,370))
+text_normal_E1_rect = text_normal_E1.get_rect(center=(400,390))
+text_normal_E2_rect = text_normal_E2.get_rect(center=(400,470))
+text_normal_E3_rect = text_normal_E3.get_rect(center=(400,490))
+text_hard_E_rect = text_hard_E.get_rect(bottomleft=(590,380))
+text_hard_E1_rect = text_hard_E1.get_rect(bottomleft=(590,400))
+text_hard_E2_rect = text_hard_E2.get_rect(bottomleft=(590,480))
+text_hard_E3_rect = text_hard_E3.get_rect(bottomleft=(590,500))
+text_hard_E4_rect = text_hard_E4.get_rect(bottomleft=(610,520))
+text_difficulty_rect = text_difficulty.get_rect(center=(400, 100))  # 난이도 선택 텍스트 위치
+
+# 설명창 여부
+show_info_window = False
+
+# 난이도 설정 화면 여부
+show_difficulty_screen = False
+
+# 튜토리얼 화면 여부
+show_tutorial_screen = False
+
+# 세팅 화면 여부
+show_setting_screen = False
+
+# Easy 버튼을 눌렀을 때 화면 여부
+show_eazy_output_screen = False
+
+GRID_SIZE = 4
+CELL_SIZE = 80  # 이 변수는 이제 동적으로 변경됨
+GRID_MARGIN = 5
+GRID_OFFSET_X = 200
+GRID_OFFSET_Y = 150
+
+# 게임 루프 내의 이벤트 처리 부분
+running = True
+while running:
+    
+    # 현재 화면 크기 가져오기
+    current_screen_size = screen_size.get_size()
+    scale_factor = calculate_scale_factor(current_screen_size)
+
+    for event in pygame.event.get():
+        if event.type == QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == MOUSEBUTTONDOWN:  # 마우스 버튼이 눌리면
+            mouse_pos = event.pos  # 마우스 위치 가져오기
+        elif event.type == VIDEORESIZE:  # 창 크기 조정 이벤트
+            screen_size = pygame.display.set_mode((event.w, event.h), RESIZABLE)  # 새로운 크기로 설정
+            scale_factor = calculate_scale_factor((event.w, event.h))  # 비율 계산
+            
+            # Clear나 Game Over 화면에서의 버튼 클릭 처리
+            if show_eazy_output_screen and (game_clear or game_over):
+                if text_back_main_rect.collidepoint(mouse_pos):  # Back to Main
+                    show_eazy_output_screen = False
+                    show_difficulty_screen = False
+                    game_started = False
+                    game_clear = False
+                    game_over = False
+                    game_stage = 1
+                    countdown_started = False
+                    show_cards = False
+                
+                elif text_choose_diff_rect.collidepoint(mouse_pos):  # Choose Difficulty
+                    show_eazy_output_screen = False
+                    show_difficulty_screen = True
+                    game_started = False
+                    game_clear = False
+                    game_over = False
+                    game_stage = 1
+                    countdown_started = False
+                    show_cards = False
+                
+                elif text_play_again_rect.collidepoint(mouse_pos):  # Play Again
+                    game_started = True
+                    game_clear = False
+                    game_over = False
+                    countdown_started = False
+                    show_cards = False
+                    game_stage = 1
+                    create_game_grid(current_difficulty)
+
+            elif not show_info_window and not show_difficulty_screen and not show_tutorial_screen and not show_setting_screen and not show_eazy_output_screen:
+                if text_start_rect.collidepoint(mouse_pos):  # "게임 시작" 버튼 클릭
+                    show_difficulty_screen = True
+                elif text_how_to_play_rect.collidepoint(mouse_pos):  # "게임 방법" 버튼 클릭
+                    show_info_window = True
+                elif text_Tutorial_rect.collidepoint(mouse_pos):  # "스코어 시스템" 버튼 클릭
+                    show_tutorial_screen = True
+                elif text_Setting_rect.collidepoint(mouse_pos):  # "세팅" 버튼 클릭
+                    show_setting_screen = True
+                elif show_eazy_output_screen and not game_started:
+                    if text_back_main_rect.collidepoint(mouse_pos):
+                        show_eazy_output_screen = False
+                    elif text_choose_diff_rect.collidepoint(mouse_pos):
+                        show_eazy_output_screen = False
+                        show_difficulty_screen = True
+                    elif text_play_again_rect.collidepoint(mouse_pos):
+                        game_started = True
+                        game_clear = False
+                        start_time = pygame.time.get_ticks()
+                        create_game_grid()
+                    
+                elif not show_info_window and not show_difficulty_screen and not show_tutorial_screen and not show_setting_screen and not show_eazy_output_screen:
+                    if text_start_rect.collidepoint(mouse_pos):  # "게임 시작" 버튼 클릭
+                        show_difficulty_screen = True
+            # 난이도 설정 화면에서 Easy 버튼 클릭 처리 부분 수정
+            elif show_difficulty_screen:  # 난이도 설정 화면에서
+                if text_ez_rect.collidepoint(mouse_pos):  # Easy 버튼 클릭
+                    show_difficulty_screen = False
+                    show_eazy_output_screen = True
+                    game_started = True
+                    game_clear = False
+                    game_over = False
+                    countdown_started = False
+                    show_cards = False
+                    game_stage = 1  # 게임 스테이지 초기화
+                    current_difficulty = 'easy'  # 난이도 저장
+                    create_game_grid('easy') # Normal 버튼 클릭
+                    
+                elif text_nm_rect.collidepoint(mouse_pos): # Normal
+                    show_difficulty_screen = False
+                    show_eazy_output_screen = True
+                    game_started = True
+                    game_clear = False
+                    game_over = False
+                    countdown_started = False
+                    show_cards = False
+                    game_stage = 1
+                    current_difficulty = 'normal'  # 난이도 저장
+                    create_game_grid('normal')
+
+                    # 난이도 설정 화면에서 Hard 버튼 클릭 처리 추가
+                elif text_hd_rect.collidepoint(mouse_pos):  # Hard 버튼 클릭
+                    show_difficulty_screen = False
+                    show_eazy_output_screen = True
+                    game_started = True
+                    game_clear = False
+                    game_over = False
+                    countdown_started = False
+                    show_cards = False
+                    game_stage = 1
+                    current_difficulty = 'hard'  # 난이도 저장
+                    create_game_grid('hard')
+                
+                elif text_BACK_rect.collidepoint(mouse_pos):  # Back 버튼 클릭
+                    show_difficulty_screen = False
+            
+            elif show_eazy_output_screen and game_started and show_cards:  # Easy 게임 화면에서
+                for y in range(GRID_SIZE):
+                    for x in range(GRID_SIZE):
+                        rect = pygame.Rect(
+                            GRID_OFFSET_X + x * (CELL_SIZE + GRID_MARGIN),
+                            GRID_OFFSET_Y + y * (CELL_SIZE + GRID_MARGIN),
+                            CELL_SIZE,
+                            CELL_SIZE
+                        )
+                        if rect.collidepoint(mouse_pos):
+                            if (x, y) == different_pos:
+                                if game_stage < 3:
+                                    game_stage += 1
+                                    countdown_started = False
+                                    show_cards = False
+                                    create_game_grid(current_difficulty)
+                                else:
+                                    # 클리어 시간 계산 및 저장
+                                    current_time = pygame.time.get_ticks()
+                                    if current_difficulty == 'easy':
+                                        final_clear_time = (current_time - start_time) / 1000
+                                    else:
+                                        final_clear_time = (current_time - start_time - total_pause_time) / 1000
+                                    game_clear = True
+                                    game_started = False
+                            else:  # 오답 카드를 클릭했을 때
+                                game_started = False
+                                game_clear = False
+                                game_over = True
+                if text_BAck_rect.collidepoint(mouse_pos):  # Back 버튼 클릭
+                    show_eazy_output_screen = False
+                    game_started = False
+                    game_clear = False
+        
+        elif show_info_window and text_Back_rect.collidepoint(mouse_pos):
+            show_info_window = False
+        
+        elif show_tutorial_screen and text_BAck_rect.collidepoint(mouse_pos):
+            show_tutorial_screen = False
+        
+        elif show_setting_screen and text_BACk_rect.collidepoint(mouse_pos):
+            show_setting_screen = False
+    
+        # 버튼 및 글씨 크기 조정
+            font_large = pygame.font.Font(None, int(100 * scale_factor))  # 큰 폰트
+            font_small = pygame.font.Font("C:/Windows/Fonts/malgun.ttf", int(25 * scale_factor))  # 작은 폰트
+            # ... 다른 폰트 크기도 비율에 맞게 조정 ...
+
+            # 버튼 위치 조정
+            text_start_rect = text_start.get_rect(center=(400 * scale_factor, 250 * scale_factor))  # 시작 버튼 위치
+            text_how_to_play_rect = text_how_to_play.get_rect(center=(400 * scale_factor, 350 * scale_factor))  # 아래에 위치
+            # ... 다른 버튼 위치도 비율에 맞게 조정 ...
+        
+        # 화면을 흰색으로 채우기
+        screen_size.fill(color_white)
+        
+        # 게임 요소를 다시 그리기
+        if show_difficulty_screen:
+            # 난이도 설정 화면 그리기
+            pygame.draw.ellipse(screen_size, color_gray, (200 * scale_factor, 50 * scale_factor, 400 * scale_factor, 100 * scale_factor))  # 배경
+            screen_size.blit(text_difficulty, text_difficulty_rect)  # 난이도 텍스트
+            # 버튼 그리기
+            screen_size.blit(text_ez, text_ez_rect)
+            screen_size.blit(text_nm, text_nm_rect)
+            screen_size.blit(text_hd, text_hd_rect)
+            screen_size.blit(text_BACK, text_BACK_rect)
+
+        elif show_info_window:
+            # 설명 창 그리기
+            pygame.draw.rect(screen_size, color_gray, (150 * scale_factor, 100 * scale_factor, 500 * scale_factor, 400 * scale_factor))  # 회색 창
+            screen_size.blit(text_how_to_play_button_output, text_how_to_play_button_output_rect)  # 설명 텍스트
+            screen_size.blit(text_Back, text_Back_rect)  # Back 버튼 그리기
+
+        elif show_tutorial_screen:
+            # 튜토리얼 화면 그리기
+            pygame.draw.rect(screen_size, color_gray, (50 * scale_factor, 30 * scale_factor, 700 * scale_factor, 540 * scale_factor))  # 배경
+            screen_size.blit(text_Tutorial_title, text_Tutorial_title.get_rect(center=(400 * scale_factor, 80 * scale_factor)))  # 제목
+            # Normal 모드 텍스트 표시
+            screen_size.blit(text_tutorial2, text_tutorial2.get_rect(midleft=(80 * scale_factor, 160 * scale_factor)))
+            screen_size.blit(text_tutorial3, text_tutorial3.get_rect(midleft=(80 * scale_factor, 220 * scale_factor)))
+            # Hard 모드 텍스트 표시
+            screen_size.blit(text_tutorial6, text_tutorial6.get_rect(midleft=(400 * scale_factor, 160 * scale_factor)))
+            screen_size.blit(text_tutorial7, text_tutorial7.get_rect(midleft=(400 * scale_factor, 220 * scale_factor)))
+            screen_size.blit(text_BAck, text_BAck_rect)  # Back 버튼 표시
+
+        elif show_eazy_output_screen:
+            # Easy 게임 화면 그리기
+            if game_started:
+                draw_game_grid(screen_size)  # 게임 그리드 그리기
+                # 타이머 및 게이지 바 그리기
+                timer_text = font_normal_mid.render(f"Time: {remaining_time:.1f}s", True, color_black)
+                timer_rect = timer_text.get_rect(center=(400 * scale_factor, 100 * scale_factor))
+                screen_size.blit(timer_text, timer_rect)
+
+            elif game_clear:
+                # Clear 화면 그리기
+                clear_text = font_clear.render("Clear!", True, color_black)
+                clear_rect = clear_text.get_rect(center=(400 * scale_factor, 200 * scale_factor))
+                screen_size.blit(clear_text, clear_rect)
+
+            elif game_over:
+                # Game Over 화면 그리기
+                screen_size.blit(text_game_over, text_game_over_rect)
+
+        else:
+            # 메인 화면 그리기
+            screen_size.blit(text_start, text_start_rect) 
+            screen_size.blit(text_how_to_play, text_how_to_play_rect)
+            screen_size.blit(text_Tutorial_button, text_Tutorial_rect)
+            screen_size.blit(text_Title, text_Title_rect)
+            screen_size.blit(text_Setting, text_Setting_rect)
+
+    # 난이도 설정 화면이 활성화되었을 때
+    if show_difficulty_screen:
+        screen_size.fill(color_white)
+        
+        # Choose Difficulty 텍스트와 배경
+        pygame.draw.ellipse(screen_size, color_gray, (200, 50, 400, 100))
+        screen_size.blit(text_difficulty, text_difficulty_rect)
+        
+        mouse_pos = pygame.mouse.get_pos()
+        
+        # Easy 버튼
+        if text_ez_rect.collidepoint(mouse_pos):
+            draw_modern_button(screen_size, text_ez_rect.inflate(100, 20), color_button_hover, True)
+        else:
+            draw_modern_button(screen_size, text_ez_rect.inflate(100, 20), color_button)
+        
+        # Normal 버튼
+        if text_nm_rect.collidepoint(mouse_pos):
+            draw_modern_button(screen_size, text_nm_rect.inflate(100, 20), color_button_hover, True)
+        else:
+            draw_modern_button(screen_size, text_nm_rect.inflate(100, 20), color_button)
+        
+        # Hard 버튼
+        if text_hd_rect.collidepoint(mouse_pos):
+            draw_modern_button(screen_size, text_hd_rect.inflate(100, 20), color_button_hover, True)
+        else:
+            draw_modern_button(screen_size, text_hd_rect.inflate(100, 20), color_button)
+            
+        # 타원형 그리기 (Choose DIFFICULTY 배경)
+        pygame.draw.ellipse(screen_size, color_gray, (200, 50, 400, 100))
+        
+        # 버튼 텍스트 그리기
+        screen_size.blit(text_ez, text_ez_rect)
+        screen_size.blit(text_nm, text_nm_rect)
+        screen_size.blit(text_hd, text_hd_rect)
+        screen_size.blit(text_BACK, text_BACK_rect)
+        screen_size.blit(text_difficulty, text_difficulty_rect)
+        screen_size.blit(text_easy_E, text_easy_E_rect)
+        screen_size.blit(text_easy_E1, text_easy_E1_rect)
+        screen_size.blit(text_easy_E2, text_easy_E2_rect)
+        screen_size.blit(text_easy_E3, text_easy_E3_rect)
+        screen_size.blit(text_normal_E, text_normal_E_rect)
+        screen_size.blit(text_normal_E1, text_normal_E1_rect)
+        screen_size.blit(text_normal_E3, text_normal_E3_rect)
+        screen_size.blit(text_normal_E2, text_normal_E2_rect)
+        screen_size.blit(text_hard_E, text_hard_E_rect)
+        screen_size.blit(text_hard_E1, text_hard_E1_rect)
+        screen_size.blit(text_hard_E2, text_hard_E2_rect)
+        screen_size.blit(text_hard_E3, text_hard_E3_rect)
+        screen_size.blit(text_hard_E4, text_hard_E4_rect)
+
+    # 튜토리얼 화면이 활성화되었을 때
+    if show_tutorial_screen:
+        # 회색 배경 (더 넓게 조정)
+        pygame.draw.rect(screen_size, color_gray, (50, 30, 700, 540))
+        
+        # 제목 그림자 효과 (살짝 오프셋)
+        text_tutorial1_shadow_rect = text_Tutorial_shadow.get_rect(center=(403, 83))
+        screen_size.blit(text_Tutorial_shadow, text_tutorial1_shadow_rect)
+
+        # 세로 구분선 추가 (검은색, 2픽셀 두께)
+        pygame.draw.line(screen_size, color_black, (375, 140), (375, 480), 2)
+
+        # 제목 (중앙 상단)
+        text_tutorial1_rect = text_Tutorial_title.get_rect(center=(400, 80))
+        screen_size.blit(text_Tutorial_title, text_tutorial1_rect)
+        
+        # Normal 모드 (왼쪽)
+        text_tutorial2_rect = text_tutorial2.get_rect(midleft=(80, 160))  # "Normal Mode:"
+        text_tutorial3_rect = text_tutorial3.get_rect(midleft=(80, 220))  # 100점
+        text_tutorial4_rect = text_tutorial4.get_rect(midleft=(80, 280))  # 95점
+        text_tutorial5_rect = text_tutorial5.get_rect(midleft=(80, 340))  # 90점
+        text_tutorial10_rect = text_tutorial10.get_rect(midleft=(80, 400))  # 85점
+        text_tutorial11_rect = text_tutorial11.get_rect(midleft=(80, 460))  # 80점
+        
+        # Hard 모드 (오른쪽)
+        text_tutorial6_rect = text_tutorial6.get_rect(midleft=(400, 160))  # "Hard Mode:"
+        text_tutorial7_rect = text_tutorial7.get_rect(midleft=(400, 220))  # 100점
+        text_tutorial8_rect = text_tutorial8.get_rect(midleft=(400, 280))  # 95점
+        text_tutorial9_rect = text_tutorial9.get_rect(midleft=(400, 340))  # 90점
+        text_tutorial12_rect = text_tutorial12.get_rect(midleft=(400, 400))  # 85점
+        text_tutorial13_rect = text_tutorial13.get_rect(midleft=(400, 460))  # 80점
+        
+        # Normal 모드 텍스트 표시
+        screen_size.blit(text_tutorial2, text_tutorial2_rect)
+        screen_size.blit(text_tutorial3, text_tutorial3_rect)
+        screen_size.blit(text_tutorial4, text_tutorial4_rect)
+        screen_size.blit(text_tutorial5, text_tutorial5_rect)
+        screen_size.blit(text_tutorial10, text_tutorial10_rect)
+        screen_size.blit(text_tutorial11, text_tutorial11_rect)
+        
+        # Hard 모드 텍스트 표시
+        screen_size.blit(text_tutorial6, text_tutorial6_rect)
+        screen_size.blit(text_tutorial7, text_tutorial7_rect)
+        screen_size.blit(text_tutorial8, text_tutorial8_rect)
+        screen_size.blit(text_tutorial9, text_tutorial9_rect)
+        screen_size.blit(text_tutorial12, text_tutorial12_rect)
+        screen_size.blit(text_tutorial13, text_tutorial13_rect)
+        
+        # Back 버튼 표시
+        screen_size.blit(text_BAck, text_BAck_rect)
+            
+        if show_eazy_output_screen: 
+
+
+            class DifferentLetterGame:
+                def __init__(self):
+                    self.window = tk.Tk()
+                    self.window.title("다른 글자 찾기 게임")
+                    
+                    # 게임 설정
+                    self.grid_size = 4
+                    self.buttons = []
+                    self.start_time = None
+                    self.game_active = False
+                    
+                    # 한글 세트 예시 (비슷한 글자들)
+                    self.letter_sets = [
+                        ('can', 'cen'),
+                        ('hit', 'hat'),
+                        ('how', 'who'),
+                        ('this', 'that'),
+                        ('do', 'bo'),
+                        ('hi', 'ni'),
+                    ]
+                    
+                    # UI 구성
+                    self.create_widgets()
+                    
+                def create_widgets(self):
+                    # 상단 레이블
+                    self.info_label = tk.Label(self.window, text="다른 글자를 찾아보세요!", font=('Arial', 14))
+                    self.info_label.pack(pady=10)
+                    
+                    # 시간 표시 레이블
+                    self.time_label = tk.Label(self.window, text="시간: 0.0초", font=('Arial', 12))
+                    self.time_label.pack(pady=5)
+                    
+                    # 게임 그리드
+                    self.game_frame = tk.Frame(self.window)
+                    self.game_frame.pack(padx=20, pady=20)
+                    
+                    # 시작 버튼
+                    self.start_button = tk.Button(self.window, text="게임 시작", command=self.start_game)
+                    self.start_button.pack(pady=10)
+                    
+                def create_grid(self):
+                    # 기존 버튼 제거
+                    for button in self.buttons:
+                        button.destroy()
+                    self.buttons = []
+                    
+                    # 랜덤하게 글자 세트 선택
+                    main_char, different_char = random.choice(self.letter_sets)
+                    
+                    # 랜덤하게 다른 글자 위치 선택
+                    different_pos = (random.randint(0, self.grid_size-1), 
+                                    random.randint(0, self.grid_size-1))
+                    
+                    # 그리드 생성
+                    for i in range(self.grid_size):
+                        row = []
+                        for j in range(self.grid_size):
+                            if (i, j) == different_pos:
+                                char = different_char
+                            else:
+                                char = main_char
+                                
+                            button = tk.Button(self.game_frame, text=char, 
+                                            width=3, height=1, 
+                                            font=('Arial', 20),
+                                            command=lambda x=i, y=j: self.check_answer(x, y, different_pos))
+                            button.grid(row=i, column=j, padx=2, pady=2)
+                            row.append(button)
+                        self.buttons.append(row)
+                        
+                def start_game(self):
+                    self.game_active = True
+                    self.start_time = time.time()
+                    self.create_grid()
+                    self.start_button.config(state='disabled')
+                    self.update_time()
+                    
+                def check_answer(self, x, y, correct_pos):
+                    if not self.game_active:
+                        return
+                        
+                    if (x, y) == correct_pos:
+                        end_time = time.time() - self.start_time
+                        self.info_label.config(text=f"정답입니다! 걸린 시간: {end_time:.1f}초")
+                        self.game_active = False
+                        self.start_button.config(state='normal', text="다시 시작")
+                    else:
+                        self.info_label.config(text="틀렸습니다! 다시 시도해보세요.")
+                        
+                def update_time(self):
+                    if self.game_active and self.start_time:
+                        current_time = time.time() - self.start_time
+                        self.time_label.config(text=f"시간: {current_time:.1f}초")
+                        self.window.after(100, self.update_time)
+                        
+                def run(self):
+                    self.window.mainloop()
+
+                # 게임 실행
+                if __name__ == "__main__":
+                    game = DifferentLetterGame()
+                    game.run()
+    
+    # 메인 화면 (기존 화면)
+    elif not show_difficulty_screen and not show_info_window and not show_tutorial_screen and not show_setting_screen and not show_eazy_output_screen : # 버튼 눌렀을 때 다른 화면 안 보이게 하고 싶으면 여기에 screen 코드 추가
+        mouse_pos = pygame.mouse.get_pos()
+
+        # "Game Start" 버튼
+        if text_start_rect.collidepoint(mouse_pos):
+            draw_modern_button(screen_size, text_start_rect.inflate(40, 20), color_button_hover, True)
+        else:
+            draw_modern_button(screen_size, text_start_rect.inflate(40, 20), color_button)
+
+        # "Explanation" 버튼
+        if text_how_to_play_rect.collidepoint(mouse_pos):
+            draw_modern_button(screen_size, text_how_to_play_rect.inflate(20, 20), color_button_hover, True)
+        else:
+            draw_modern_button(screen_size, text_how_to_play_rect.inflate(20, 20), color_button)
+
+        # "Tutorial" 버튼
+        if text_Tutorial_rect.collidepoint(mouse_pos):
+            draw_modern_button(screen_size, text_Tutorial_rect.inflate(20, 20), color_button_hover, True)
+        else:
+            draw_modern_button(screen_size, text_Tutorial_rect.inflate(20, 20), color_button)
+
+        # "Setting" 버튼
+        if text_Setting_rect.collidepoint(mouse_pos):
+            draw_modern_button(screen_size, text_Setting_rect.inflate(20, 20), color_button_hover, True)
+        else:
+            draw_modern_button(screen_size, text_Setting_rect.inflate(20, 20), color_button)
+            
+        # 텍스트 그리기
+        screen_size.blit(text_start, text_start_rect) 
+        screen_size.blit(text_how_to_play, text_how_to_play_rect)
+        screen_size.blit(text_Tutorial_button, text_Tutorial_rect)
+        screen_size.blit(text_Title, text_Title_rect)
+        screen_size.blit(text_Setting, text_Setting_rect)
+
+    # 설명 창이 활성화되었을 때
+    if show_info_window:
+        pygame.draw.rect(screen_size, color_gray, (150, 100, 500, 400))  # 회색 창
+        screen_size.blit(text_how_to_play_button_output, text_how_to_play_button_output_rect)  # 설명 텍스트 그리기
+        screen_size.blit(text_Back, text_Back_rect)  # Back 버튼 그리기
+        screen_size.blit(text_EPN1, text_EPN1_rect)
+        screen_size.blit(text_EPN2, text_EPN2_rect)
+        screen_size.blit(text_EPN3, text_EPN3_rect)
+        screen_size.blit(text_EPN4, text_EPN4_rect)
+        screen_size.blit(text_EPN5, text_EPN5_rect)
+        screen_size.blit(text_EPN6, text_EPN6_rect)
+
+            
+
+    # setting 화면이 활성화되었을 때
+    if show_setting_screen:
+        screen_size.fill(color_black)
+        screen_size.blit(text_BACk, text_BACk_rect)
+        screen_size.blit(text_Error, text_Error_rect)
+        screen_size.blit(text_PNF, text_PNF_rect)
+
+    # Easy 게임 화면 부분
+    if show_eazy_output_screen:
+        screen_size.fill(color_white)
+        if game_started:
+            # 게이지 바 위치 설정
+            gauge_y = 20
+            
+            # 스테이지 표시
+            stage_text = font_normal_mid.render(f"Stage {game_stage}/3", True, color_black)
+            stage_rect = stage_text.get_rect(topright=(750, gauge_y + 40))
+            screen_size.blit(stage_text, stage_rect)
+
+            if not countdown_started:
+                countdown_started = True
+                countdown_start_time = pygame.time.get_ticks()
+                show_cards = False
+                pause_start_time = pygame.time.get_ticks()
+                
+                if current_difficulty == 'easy' or game_stage == 1:
+                    start_time = pygame.time.get_ticks()
+                    total_pause_time = 0
+            
+            if countdown_started and not show_cards:
+                current_time = pygame.time.get_ticks()
+                countdown_time = 3 - (current_time - countdown_start_time) // 1000
+                
+                if countdown_time > 0:
+                    count_text = font_title2.render(str(countdown_time), True, color_black)
+                    count_rect = count_text.get_rect(center=(400, 200))
+                    screen_size.blit(count_text, count_rect)
+                else:
+                    show_cards = True
+                    if current_difficulty == 'easy':
+                        start_time = pygame.time.get_ticks()
+                    else:
+                        pause_duration = pygame.time.get_ticks() - pause_start_time
+                        total_pause_time += pause_duration
+            
+            if show_cards:
+                # 게임 그리드 그리기
+                draw_game_grid(screen_size)
+                
+                # 난이도별 시간 제한 설정
+                if current_difficulty == 'easy':
+                    time_limit = 10
+                elif current_difficulty == 'normal':
+                    time_limit = 25
+                else:  # hard
+                    time_limit = 15
+                
+                # 타이머 계산
+                current_time = pygame.time.get_ticks()
+                if current_difficulty == 'easy':
+                    elapsed_time = (current_time - start_time) / 1000
+                else:
+                    elapsed_time = (current_time - start_time - total_pause_time) / 1000
+                
+                remaining_time = max(0, time_limit - elapsed_time)
+                
+                # 게이지 바 그리기
+                gauge_width = int((remaining_time / time_limit) * 400)
+                pygame.draw.rect(screen_size, color_energy, (200, gauge_y, gauge_width, 30))
+                pygame.draw.rect(screen_size, color_black, (200, gauge_y, 400, 30), 2)
+                
+                # 타이머 표시
+                timer_text = font_normal_mid.render(f"Time: {remaining_time:.1f}s", True, color_black)
+                timer_rect = timer_text.get_rect(center=(400, 100))
+                screen_size.blit(timer_text, timer_rect)
+                
+                if remaining_time <= 0:
+                    game_started = False
+                    game_clear = False
+                    game_over = True
+
+        elif game_clear:
+            
+            # Clear! 텍스트와 그림자
+            clear_text = font_clear.render("Clear!", True, color_black)
+            clear_text_shadow = font_clear.render("Clear!", True, color_gray)
+            clear_rect = clear_text.get_rect(center=(400, 200))
+            shadow_rect = clear_text_shadow.get_rect(center=(405, 205))
+            screen_size.blit(clear_text_shadow, shadow_rect)
+            screen_size.blit(clear_text, clear_rect)
+            
+            # Normal과 Hard 난이도에서만 시간과 점수 표시
+            if current_difficulty in ['normal', 'hard']:
+                # 점수 계산
+                score = 0
+                if current_difficulty == 'normal':
+                    if final_clear_time <= 4.0:
+                        score = 100
+                    else:
+                        # 5.0초를 초과하는 경우 0.5초마다 5점씩 감소
+                        extra_time = final_clear_time - 4.0
+                        points_to_deduct = int(extra_time / 0.5) * 5
+                        score = max(5, 100 - points_to_deduct)  # 최소 5점은 보장
+                else:  # hard
+                    if final_clear_time <= 7.0:
+                        score = 100
+                    else:
+                        # 7.0초를 초과하는 경우 0.5초마다 5점씩 감소
+                        extra_time = final_clear_time - 7.0
+                        points_to_deduct = int(extra_time / 0.5) * 5
+                        score = max(5, 100 - points_to_deduct)  # 최소 5점은 보장
+                
+                # 시간과 점수 함께 표시
+                time_score_text = font_normal_mid.render(f"Time: {final_clear_time:.1f}s ({score}점)", True, color_black)
+                time_score_rect = time_score_text.get_rect(center=(400, 300))
+                screen_size.blit(time_score_text, time_score_rect)
+            
+            # Clear 시 버튼들 표시
+            screen_size.blit(text_back_main, text_back_main_rect)
+            screen_size.blit(text_choose_diff, text_choose_diff_rect)
+            screen_size.blit(text_play_again, text_play_again_rect)
+
+
+            # Easy 난이도에서는 시간 표시 없이 버튼만 표시
+            if current_difficulty == 'easy':
+                screen_size.blit(text_back_main, text_back_main_rect)
+                screen_size.blit(text_choose_diff, text_choose_diff_rect)
+                screen_size.blit(text_play_again, text_play_again_rect)
+        
+        elif game_over:
+            # Game Over 텍스트 표시
+            screen_size.blit(text_game_over, text_game_over_rect)
+            
+            # 버튼들 표시 (Clear 화면과 동일한 위치)
+            screen_size.blit(text_back_main, text_back_main_rect)
+            screen_size.blit(text_choose_diff, text_choose_diff_rect)
+            screen_size.blit(text_play_again, text_play_again_rect)
+
+    # 화면 업데이트
+    pygame.display.flip()
+    pygame.time.delay(30)
+
+
+# Pygame 종료
+pygame.quit()
